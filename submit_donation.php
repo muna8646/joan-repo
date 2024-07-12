@@ -1,29 +1,50 @@
 <?php
 session_start();
-include 'db.php';
+include 'db.php'; // Ensure db.php is correctly included and sets up $conn
 
-// Retrieve POST data
-$donorName = $_POST['donorName'];
-$donorEmail = $_POST['donorEmail'];
-$donorPhone = $_POST['donorPhone'];
-$donationCategory = $_POST['donationCategory'];
-$childrenHome = $_POST['childrenHome'];
-$managerName = $_POST['managerName'];  // Get manager name from POST data
-$donationAmount = isset($_POST['donationAmount']) ? $_POST['donationAmount'] : null;
-$donationDetails = $_POST['donationDetails'];
+// Check if form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Retrieve POST data
+    $donorName = $_POST['donorName'];
+    $donorEmail = $_POST['donorEmail'];
+    $donorPhone = $_POST['donorPhone'];
+    $donationCategory = $_POST['donationCategory'];
+    $childrenHome = $_POST['childrenHome'];
+    $managerName = $_POST['managerName']; // Get manager name from POST data
+    $donationAmount = isset($_POST['donationAmount']) ? $_POST['donationAmount'] : null;
+    $donationDetails = $_POST['donationDetails'];
 
-// Prepare and bind
-$sql = "INSERT INTO donations (donorName, donorEmail, donorPhone, donationCategory, childrenHome, managerName, donationAmount, donationDetails) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("ssssssis", $donorName, $donorEmail, $donorPhone, $donationCategory, $childrenHome, $managerName, $donationAmount, $donationDetails);
+    // Prepare SQL statement
+    $sql = "INSERT INTO donations (donorName, donorEmail, donorPhone, donationCategory, childrenHome, managerName, donationAmount, donationDetails) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-// Execute and check
-if ($stmt->execute()) {
-    echo "Donation submitted successfully!";
+    // Prepare and bind parameters
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        die("Prepare failed: " . $conn->error);
+    }
+
+    // Bind parameters
+    $stmt->bind_param("ssssssds", $donorName, $donorEmail, $donorPhone, $donationCategory, $childrenHome, $managerName, $donationAmount, $donationDetails);
+
+    // Execute statement
+    if ($stmt->execute()) {
+        $_SESSION['message'] = "Donation submitted successfully!";
+        $_SESSION['message_type'] = "success";
+        header("Location: some_success_page.php"); // Redirect to a success page
+        exit();
+    } else {
+        $_SESSION['message'] = "Error: " . $stmt->error;
+        $_SESSION['message_type'] = "danger";
+        header("Location: wellwisher.php"); // Redirect to an error page
+        exit();
+    }
+
+    // Close statement
+    $stmt->close();
 } else {
-    echo "Error: " . $stmt->error;
+    die("Invalid request"); // Handling if the script is accessed directly without POST data
 }
 
-$stmt->close();
+// Close connection
 $conn->close();
 ?>
